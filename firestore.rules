@@ -1,0 +1,122 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        (request.auth.token.email == "suarltndf@gmail.com" && request.auth.token.email_verified == true) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    function isValidVehicle(data) {
+      return data.keys().hasAll(['name', 'category', 'price', 'image', 'transmission', 'seats', 'fuel', 'luggage', 'description', 'status']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.category is string && data.category.size() > 0 && data.category.size() < 50 &&
+             data.price is number && data.price >= 0 &&
+             data.image is string && data.image.size() < 1048576 &&
+             data.transmission is string && data.transmission.size() < 50 &&
+             data.seats is number && data.seats > 0 &&
+             data.fuel is string && data.fuel.size() < 50 &&
+             data.luggage is number && data.luggage >= 0 &&
+             data.description is string && data.description.size() < 2000 &&
+             data.status in ['available', 'soon', 'rented'] &&
+             (!('returnDate' in data) || (data.returnDate is string && data.returnDate.size() < 50));
+    }
+
+    function isValidReservation(data) {
+      return data.keys().hasAll(['vehicleId', 'vehicleName', 'startDate', 'duration', 'firstName', 'lastName', 'phone', 'zone', 'paymentMethod', 'totalPrice', 'status', 'createdAt']) &&
+             data.vehicleId is string && data.vehicleId.size() > 0 && data.vehicleId.size() < 100 &&
+             data.vehicleName is string && data.vehicleName.size() > 0 && data.vehicleName.size() < 100 &&
+             data.startDate is string && data.startDate.size() > 0 && data.startDate.size() < 50 &&
+             data.duration is number && data.duration > 0 &&
+             data.firstName is string && data.firstName.size() > 0 && data.firstName.size() < 100 &&
+             data.lastName is string && data.lastName.size() > 0 && data.lastName.size() < 100 &&
+             data.phone is string && data.phone.size() > 0 && data.phone.size() < 50 &&
+             data.zone is string && data.zone.size() > 0 && data.zone.size() < 100 &&
+             (!('zoneDetails' in data) || (data.zoneDetails is string && data.zoneDetails.size() < 500)) &&
+             (!('comments' in data) || (data.comments is string && data.comments.size() < 1000)) &&
+             data.options is map &&
+             data.paymentMethod is string && data.paymentMethod.size() > 0 && data.paymentMethod.size() < 50 &&
+             data.totalPrice is number && data.totalPrice >= 0 &&
+             data.status in ['pending', 'confirmed', 'cancelled', 'completed'] &&
+             data.createdAt is string && data.createdAt.size() > 0 && data.createdAt.size() < 50;
+    }
+
+    function isValidBookingOption(data) {
+      return data.keys().hasAll(['name', 'description', 'price']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.description is string && data.description.size() > 0 && data.description.size() < 500 &&
+             data.price is number && data.price >= 0;
+    }
+
+    function isValidSettings(data) {
+      return (!('founder' in data) || (data.founder is map && 
+                (!('name' in data.founder) || (data.founder.name is string && data.founder.name.size() < 100)) &&
+                (!('bio' in data.founder) || (data.founder.bio is string && data.founder.bio.size() < 2000)) &&
+                (!('image' in data.founder) || (data.founder.image is string && data.founder.image.size() < 1048576))
+             )) &&
+             (!('logo' in data) || (data.logo is string && data.logo.size() < 1048576)) &&
+             (!('companyInfo' in data) || (data.companyInfo is map &&
+                (!('description' in data.companyInfo) || (data.companyInfo.description is string && data.companyInfo.description.size() < 1000)) &&
+                (!('address' in data.companyInfo) || (data.companyInfo.address is string && data.companyInfo.address.size() < 200)) &&
+                (!('phone' in data.companyInfo) || (data.companyInfo.phone is string && data.companyInfo.phone.size() < 50)) &&
+                (!('email' in data.companyInfo) || (data.companyInfo.email is string && data.companyInfo.email.size() < 100)) &&
+                (!('whatsapp' in data.companyInfo) || (data.companyInfo.whatsapp is string && data.companyInfo.whatsapp.size() < 50))
+             ));
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['email', 'role']) &&
+             data.email is string && data.email.size() > 0 && data.email.size() < 100 &&
+             data.role in ['admin'];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /vehicles/{vehicleId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidVehicle(request.resource.data);
+      allow update: if isAdmin() && isValidVehicle(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /reservations/{reservationId} {
+      allow create: if isValidReservation(request.resource.data);
+      allow read: if isAdmin();
+      allow update: if isAdmin() && isValidReservation(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /bookingOptions/{optionId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidBookingOption(request.resource.data);
+      allow update: if isAdmin() && isValidBookingOption(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /settings/{settingId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidSettings(request.resource.data);
+      allow update: if isAdmin() && isValidSettings(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && isValidUser(request.resource.data);
+      allow update: if isAdmin() && isValidUser(request.resource.data);
+      allow delete: if isAdmin();
+    }
+  }
+}

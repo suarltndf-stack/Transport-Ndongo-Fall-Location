@@ -1,0 +1,115 @@
+{
+  "entities": {
+    "Vehicle": {
+      "title": "Vehicle",
+      "description": "A vehicle available for rent",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "price": { "type": "number" },
+        "image": { "type": "string" },
+        "transmission": { "type": "string" },
+        "seats": { "type": "number" },
+        "fuel": { "type": "string" },
+        "luggage": { "type": "number" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["available", "soon", "rented"] },
+        "returnDate": { "type": "string" }
+      },
+      "required": ["name", "category", "price", "image", "transmission", "seats", "fuel", "luggage", "description", "status"]
+    },
+    "Reservation": {
+      "title": "Reservation",
+      "description": "A booking reservation",
+      "type": "object",
+      "properties": {
+        "vehicleId": { "type": "string" },
+        "vehicleName": { "type": "string" },
+        "startDate": { "type": "string" },
+        "duration": { "type": "number" },
+        "firstName": { "type": "string" },
+        "lastName": { "type": "string" },
+        "phone": { "type": "string" },
+        "zone": { "type": "string" },
+        "zoneDetails": { "type": "string" },
+        "comments": { "type": "string" },
+        "options": { "type": "object" },
+        "paymentMethod": { "type": "string" },
+        "totalPrice": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "cancelled", "completed"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["vehicleId", "vehicleName", "startDate", "duration", "firstName", "lastName", "phone", "zone", "paymentMethod", "totalPrice", "status", "createdAt"]
+    },
+    "BookingOption": {
+      "title": "BookingOption",
+      "description": "An extra option for booking",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" }
+      },
+      "required": ["name", "description", "price"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "Global application settings",
+      "type": "object",
+      "properties": {
+        "founder": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "bio": { "type": "string" },
+            "image": { "type": "string" }
+          }
+        },
+        "logo": { "type": "string" },
+        "companyInfo": {
+          "type": "object",
+          "properties": {
+            "description": { "type": "string" },
+            "address": { "type": "string" },
+            "phone": { "type": "string" },
+            "email": { "type": "string" },
+            "whatsapp": { "type": "string" }
+          }
+        }
+      }
+    },
+    "User": {
+      "title": "User",
+      "description": "A user of the application",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin"] }
+      },
+      "required": ["email", "role"]
+    }
+  },
+  "firestore": {
+    "/vehicles/{vehicleId}": {
+      "schema": { "$ref": "#/entities/Vehicle" },
+      "description": "Collection of vehicles"
+    },
+    "/reservations/{reservationId}": {
+      "schema": { "$ref": "#/entities/Reservation" },
+      "description": "Collection of reservations"
+    },
+    "/bookingOptions/{optionId}": {
+      "schema": { "$ref": "#/entities/BookingOption" },
+      "description": "Collection of booking options"
+    },
+    "/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/Settings" },
+      "description": "Global settings document (e.g., 'general')"
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Collection of users"
+    }
+  }
+}

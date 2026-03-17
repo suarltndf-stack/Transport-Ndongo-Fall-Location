@@ -1,15 +1,23 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Image as ImageIcon, X, Save, Lock, LogOut, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { useVehicles } from '../VehicleContext';
 import { VehicleStatus, Vehicle, ReservationStatus, BookingOption } from '../types';
+import { auth } from '../firebase';
+import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'firebase/auth';
 
 export const AdminPage = () => {
-  const { vehicles, founder, reservations, bookingOptions, logo, companyInfo, updateStatus, addVehicle, updateVehicleDetails, deleteVehicle, updateFounder, updateReservationStatus, addBookingOption, updateBookingOption, deleteBookingOption, updateLogo, updateCompanyInfo } = useVehicles();
+  const { vehicles, founder, reservations, bookingOptions, logo, companyInfo, updateStatus, addVehicle, updateVehicleDetails, deleteVehicle, updateFounder, updateReservationStatus, addBookingOption, updateBookingOption, deleteBookingOption, updateLogo, updateCompanyInfo, isAdmin, isAuthReady } = useVehicles();
   
   // --- Auth State ---
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [password, setPassword] = useState('');
+  const [user, setUser] = useState<any>(null);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, []);
 
   // --- Admin State ---
   const [activeTab, setActiveTab] = useState<'fleet' | 'founder' | 'reservations' | 'options'>('reservations');
@@ -32,19 +40,23 @@ export const AdminPage = () => {
   const [companyData, setCompanyData] = useState(companyInfo);
 
   // --- Handlers for Auth ---
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === 'Birajunior08') {
-      setIsAuthenticated(true);
-      setError('');
-    } else {
-      setError('Mot de passe incorrect');
+    setError('');
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (err) {
+      setError('Erreur lors de la connexion. Veuillez réessayer.');
     }
   };
 
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    setPassword('');
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.error('Erreur lors de la déconnexion', err);
+    }
   };
 
   // --- Handlers for Status ---
@@ -143,7 +155,17 @@ export const AdminPage = () => {
   };
 
   // --- Render Login Screen ---
-  if (!isAuthenticated) {
+  if (!isAuthReady) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--color-navy)] mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user || !isAdmin) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -156,40 +178,31 @@ export const AdminPage = () => {
             Accès Administrateur
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Veuillez saisir le mot de passe pour accéder à la gestion.
+            {!user 
+              ? "Connectez-vous avec votre compte Google administrateur pour accéder à la gestion de la flotte."
+              : "Votre compte n'a pas les droits d'administrateur."}
           </p>
         </div>
 
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
           <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-gray-100">
-            <form className="space-y-6" onSubmit={handleLogin}>
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                  Mot de passe
-                </label>
-                <div className="mt-1">
-                  <input
-                    id="password"
-                    name="password"
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[var(--color-gold)] focus:border-[var(--color-gold)] sm:text-sm"
-                  />
-                </div>
-                {error && <p className="mt-2 text-sm text-red-600 font-medium">{error}</p>}
-              </div>
-
-              <div>
-                <button
-                  type="submit"
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[var(--color-navy)] hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-navy)] transition-colors"
-                >
-                  Se connecter
-                </button>
-              </div>
-            </form>
+            {error && <p className="mb-4 text-sm text-red-600 font-medium text-center">{error}</p>}
+            
+            {!user ? (
+              <button
+                onClick={handleLogin}
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[var(--color-navy)] hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-navy)] transition-colors"
+              >
+                Se connecter avec Google
+              </button>
+            ) : (
+              <button
+                onClick={handleLogout}
+                className="w-full flex justify-center py-3 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-navy)] transition-colors"
+              >
+                Se déconnecter
+              </button>
+            )}
           </div>
         </div>
       </div>
