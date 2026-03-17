@@ -46,8 +46,9 @@ export const AdminPage = () => {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-    } catch (err) {
-      setError('Erreur lors de la connexion. Veuillez réessayer.');
+    } catch (err: any) {
+      console.error("Firebase Auth Error:", err);
+      setError(`Erreur: ${err.message || 'Veuillez réessayer.'}`);
     }
   };
 
