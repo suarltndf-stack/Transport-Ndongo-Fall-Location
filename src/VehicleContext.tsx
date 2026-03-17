@@ -127,7 +127,7 @@ export const VehicleProvider: React.FC<{children: React.ReactNode}> = ({ childre
           const userDoc = await getDocFromServer(doc(db, 'users', user.uid));
           if (userDoc.exists() && userDoc.data().role === 'admin') {
             setIsAdmin(true);
-          } else if (user.email === 'suarltndf@gmail.com' && user.emailVerified) {
+          } else if ((user.email === 'suarltndf@gmail.com' || user.email === 'fallndongo20@gmail.com') && user.emailVerified) {
             setIsAdmin(true);
           } else {
             setIsAdmin(false);
