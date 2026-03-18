@@ -8,6 +8,7 @@ export const VehicleDetailPage = () => {
   const navigate = useNavigate();
   const { vehicles } = useVehicles();
   const car = vehicles.find(v => v.id === id);
+  const [selectedImageIdx, setSelectedImageIdx] = React.useState(0);
 
   if (!car) return <div className="p-20 text-center">Véhicule introuvable.</div>;
 
@@ -18,6 +19,9 @@ export const VehicleDetailPage = () => {
   // Find confirmed reservations for this vehicle to show unavailable dates
   const { reservations } = useVehicles();
   const confirmedReservations = reservations.filter(r => r.vehicleId === car.id && r.status === 'confirmed');
+
+  const gallery = car.gallery?.length ? car.gallery : (car.image ? [car.image] : []);
+  const currentImage = gallery[selectedImageIdx] || car.image;
 
   return (
     <div className="py-12 bg-white min-h-screen">
@@ -42,16 +46,29 @@ export const VehicleDetailPage = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Image */}
-          <div>
+          {/* Image Gallery */}
+          <div className="flex flex-col gap-4">
             <div className="rounded-2xl overflow-hidden shadow-lg h-[400px] lg:h-[500px] relative">
-              <img src={car.image} alt={car.name} className={`w-full h-full object-cover ${isRented ? 'grayscale opacity-80' : ''}`} />
+              <img src={currentImage} alt={car.name} className={`w-full h-full object-cover transition-opacity duration-300 ${isRented ? 'grayscale opacity-80' : ''}`} />
               {isRented && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/40">
                   <span className="text-white text-4xl font-bold tracking-widest border-4 border-white px-6 py-3 rotate-[-15deg]">LOUÉ</span>
                 </div>
               )}
             </div>
+            {gallery.length > 1 && (
+              <div className="grid grid-cols-4 gap-4">
+                {gallery.map((img, idx) => (
+                  <button 
+                    key={idx} 
+                    onClick={() => setSelectedImageIdx(idx)}
+                    className={`relative rounded-lg overflow-hidden h-24 border-2 transition-all ${selectedImageIdx === idx ? 'border-[var(--color-gold)] shadow-md' : 'border-transparent hover:border-gray-300'}`}
+                  >
+                    <img src={img} alt={`${car.name} ${idx + 1}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Details */}

@@ -80,7 +80,7 @@ export const AdminPage = () => {
   const openAddModal = () => {
     setEditingVehicle(null);
     setFormData({
-      name: '', category: 'Berline Luxe', price: 0, image: '', transmission: 'Automatique',
+      name: '', category: 'Berline Luxe', price: 0, image: '', gallery: [], transmission: 'Automatique',
       seats: 5, fuel: 'Essence', luggage: 2, description: '', status: 'available'
     });
     setIsModalOpen(true);
@@ -88,7 +88,10 @@ export const AdminPage = () => {
 
   const openEditModal = (car: Vehicle) => {
     setEditingVehicle(car);
-    setFormData(car);
+    setFormData({
+      ...car,
+      gallery: car.gallery?.length ? car.gallery : (car.image ? [car.image] : [])
+    });
     setIsModalOpen(true);
   };
 
@@ -135,7 +138,7 @@ export const AdminPage = () => {
     });
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'founder' | 'vehicle' | 'logo' = 'vehicle') => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'founder' | 'logo' = 'founder') => {
     const file = e.target.files?.[0];
     if (file) {
       setIsUploading(true);
@@ -145,8 +148,6 @@ export const AdminPage = () => {
           setFounderData({ ...founderData, image: compressedDataUrl });
         } else if (type === 'logo') {
           setLogoData(compressedDataUrl);
-        } else {
-          setFormData({ ...formData, image: compressedDataUrl });
         }
       } catch (error) {
         console.error("Erreur lors de la compression de l'image:", error);
@@ -155,6 +156,49 @@ export const AdminPage = () => {
         setIsUploading(false);
       }
     }
+  };
+
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    const currentGallery = formData.gallery || (formData.image ? [formData.image] : []);
+    const remainingSlots = 4 - currentGallery.length;
+    
+    if (remainingSlots <= 0) {
+      alert("Vous ne pouvez ajouter que 4 photos maximum.");
+      return;
+    }
+
+    const filesToProcess = files.slice(0, remainingSlots);
+    setIsUploading(true);
+
+    try {
+      const compressedImages = await Promise.all(filesToProcess.map(file => compressImage(file)));
+      const newGallery = [...currentGallery, ...compressedImages];
+      
+      setFormData({ 
+        ...formData, 
+        gallery: newGallery,
+        image: newGallery[0] || '' 
+      });
+    } catch (error) {
+      console.error("Erreur lors de la compression des images:", error);
+      alert("Erreur lors du traitement des images.");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const removeGalleryImage = (index: number) => {
+    const currentGallery = formData.gallery || (formData.image ? [formData.image] : []);
+    const newGallery = currentGallery.filter((_, i) => i !== index);
+    setFormData({
+      ...formData,
+      gallery: newGallery,
+      image: newGallery[0] || ''
+    });
   };
 
   const saveVehicle = (e: React.FormEvent) => {
@@ -627,16 +671,41 @@ export const AdminPage = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Prix par jour (FCFA)</label>
                   <input type="number" required value={formData.price || ''} onChange={e => setFormData({...formData, price: Number(e.target.value)})} className="w-full border border-gray-300 rounded-md px-3 py-2" />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Image du véhicule</label>
-                  <div className="flex items-center gap-2">
-                    {formData.image && <img src={formData.image} alt="Aperçu" className="w-10 h-10 object-cover rounded" />}
-                    <input type="file" accept="image/*" ref={fileInputRef} onChange={(e) => handleImageUpload(e, 'vehicle')} className="hidden" />
-                    <button type="button" disabled={isUploading} onClick={() => fileInputRef.current?.click()} className="bg-gray-100 border border-gray-300 text-gray-700 px-3 py-2 rounded-md text-sm hover:bg-gray-200 flex-1 flex items-center justify-center gap-2 disabled:opacity-50">
-                      {isUploading ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-700"></div> : <ImageIcon className="w-4 h-4" />} 
-                      {isUploading ? 'Traitement...' : (formData.image ? 'Changer l\'image' : 'Importer une image')}
-                    </button>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Photos du véhicule (Max 4)</label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-2">
+                    {(formData.gallery || (formData.image ? [formData.image] : [])).map((img, idx) => (
+                      <div key={idx} className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                        <img src={img} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
+                        <button 
+                          type="button" 
+                          onClick={() => removeGalleryImage(idx)}
+                          className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 shadow-sm"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                        {idx === 0 && (
+                          <span className="absolute bottom-1 left-1 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded">Principale</span>
+                        )}
+                      </div>
+                    ))}
+                    {(formData.gallery || (formData.image ? [formData.image] : [])).length < 4 && (
+                      <button 
+                        type="button" 
+                        disabled={isUploading} 
+                        onClick={() => fileInputRef.current?.click()} 
+                        className="aspect-video bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-500 hover:bg-gray-100 hover:border-gray-400 transition-colors disabled:opacity-50"
+                      >
+                        {isUploading ? (
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-500 mb-1"></div>
+                        ) : (
+                          <Plus className="w-6 h-6 mb-1" />
+                        )}
+                        <span className="text-xs font-medium">{isUploading ? 'Traitement...' : 'Ajouter photo'}</span>
+                      </button>
+                    )}
                   </div>
+                  <input type="file" accept="image/*" multiple ref={fileInputRef} onChange={handleGalleryUpload} className="hidden" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Transmission</label>

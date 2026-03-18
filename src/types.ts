@@ -22,6 +22,7 @@ export interface Vehicle {
   category: string;
   price: number;
   image: string;
+  gallery?: string[];
   transmission: string;
   seats: number;
   fuel: string;
