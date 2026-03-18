@@ -92,20 +92,68 @@ export const AdminPage = () => {
     setIsModalOpen(true);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'founder' | 'vehicle' | 'logo' = 'vehicle') => {
+  const [isUploading, setIsUploading] = useState(false);
+
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 1024;
+          const MAX_HEIGHT = 1024;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          // Compress to WebP or JPEG
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          resolve(dataUrl);
+        };
+        img.onerror = (error) => reject(error);
+      };
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'founder' | 'vehicle' | 'logo' = 'vehicle') => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
+      setIsUploading(true);
+      try {
+        const compressedDataUrl = await compressImage(file);
         if (type === 'founder') {
-          setFounderData({ ...founderData, image: reader.result as string });
+          setFounderData({ ...founderData, image: compressedDataUrl });
         } else if (type === 'logo') {
-          setLogoData(reader.result as string);
+          setLogoData(compressedDataUrl);
         } else {
-          setFormData({ ...formData, image: reader.result as string });
+          setFormData({ ...formData, image: compressedDataUrl });
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (error) {
+        console.error("Erreur lors de la compression de l'image:", error);
+        alert("Erreur lors du traitement de l'image.");
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
@@ -424,10 +472,11 @@ export const AdminPage = () => {
                   <div>
                     <input type="file" accept="image/*" ref={logoFileRef} onChange={(e) => handleImageUpload(e, 'logo')} className="hidden" />
                     <div className="flex items-center gap-2">
-                      <button type="button" onClick={() => logoFileRef.current?.click()} className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-50 flex items-center gap-2">
-                        <ImageIcon className="w-4 h-4" /> Importer un logo
+                      <button type="button" disabled={isUploading} onClick={() => logoFileRef.current?.click()} className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50">
+                        {isUploading ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-700"></div> : <ImageIcon className="w-4 h-4" />} 
+                        {isUploading ? 'Traitement...' : 'Importer un logo'}
                       </button>
-                      {logoData && (
+                      {logoData && !isUploading && (
                         <button type="button" onClick={() => { setLogoData(''); if (logoFileRef.current) logoFileRef.current.value = ''; }} className="text-red-600 text-sm hover:text-red-800 font-medium px-2">
                           Supprimer
                         </button>
@@ -482,8 +531,9 @@ export const AdminPage = () => {
                       <img src={founderData.image} alt="Fondateur" className="w-24 h-24 rounded-full object-cover border-4 border-gray-100 shadow-sm" />
                       <div>
                         <input type="file" accept="image/*" ref={founderFileRef} onChange={(e) => handleImageUpload(e, 'founder')} className="hidden" />
-                        <button type="button" onClick={() => founderFileRef.current?.click()} className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-50 flex items-center gap-2">
-                          <ImageIcon className="w-4 h-4" /> Importer une nouvelle image
+                        <button type="button" disabled={isUploading} onClick={() => founderFileRef.current?.click()} className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50">
+                          {isUploading ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-700"></div> : <ImageIcon className="w-4 h-4" />} 
+                          {isUploading ? 'Traitement...' : 'Importer une nouvelle image'}
                         </button>
                         <p className="text-xs text-gray-500 mt-2">Format recommandé : JPG, PNG. Max 2MB.</p>
                       </div>
@@ -582,8 +632,9 @@ export const AdminPage = () => {
                   <div className="flex items-center gap-2">
                     {formData.image && <img src={formData.image} alt="Aperçu" className="w-10 h-10 object-cover rounded" />}
                     <input type="file" accept="image/*" ref={fileInputRef} onChange={(e) => handleImageUpload(e, 'vehicle')} className="hidden" />
-                    <button type="button" onClick={() => fileInputRef.current?.click()} className="bg-gray-100 border border-gray-300 text-gray-700 px-3 py-2 rounded-md text-sm hover:bg-gray-200 flex-1 flex items-center justify-center gap-2">
-                      <ImageIcon className="w-4 h-4" /> {formData.image ? 'Changer l\'image' : 'Importer une image'}
+                    <button type="button" disabled={isUploading} onClick={() => fileInputRef.current?.click()} className="bg-gray-100 border border-gray-300 text-gray-700 px-3 py-2 rounded-md text-sm hover:bg-gray-200 flex-1 flex items-center justify-center gap-2 disabled:opacity-50">
+                      {isUploading ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-700"></div> : <ImageIcon className="w-4 h-4" />} 
+                      {isUploading ? 'Traitement...' : (formData.image ? 'Changer l\'image' : 'Importer une image')}
                     </button>
                   </div>
                 </div>
