@@ -1,12 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, CreditCard, User, ChevronRight, Quote } from 'lucide-react';
+import { Shield, CreditCard, User, ChevronRight, Quote, Star } from 'lucide-react';
 import { useVehicles } from '../VehicleContext';
 import { VehicleCard } from '../components';
 
 export const HomePage = () => {
-  const { vehicles, founder } = useVehicles();
-  const featuredVehicles = vehicles.slice(0, 3);
+  const { vehicles, founder, reviews } = useVehicles();
 
   return (
     <div>
@@ -40,6 +39,24 @@ export const HomePage = () => {
         </div>
       </section>
 
+      {/* All Vehicles */}
+      <section className="py-20 bg-gray-50 border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-end mb-12">
+            <div>
+              <h2 className="text-3xl font-bold font-serif text-[var(--color-navy)] mb-2">Notre Flotte</h2>
+              <p className="text-gray-600">Découvrez l'ensemble de nos véhicules disponibles à la location.</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {vehicles.map(car => (
+              <VehicleCard key={car.id} car={car} />
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Features */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -65,6 +82,33 @@ export const HomePage = () => {
               <h3 className="text-xl font-bold text-[var(--color-navy)] mb-4 font-serif">Paiement Flexible</h3>
               <p className="text-gray-600">Réservez en ligne avec un acompte de 30% ou payez à la livraison du véhicule. C'est vous qui choisissez.</p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Reviews Section */}
+      <section className="py-20 bg-gray-50 border-t border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold font-serif text-[var(--color-navy)] mb-4">Avis de nos clients</h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">Découvrez ce que nos clients disent de leur expérience de location avec nous.</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {reviews.slice(0, 3).map(review => (
+              <div key={review.id} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 relative">
+                <div className="flex text-[var(--color-gold)] mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className={`w-5 h-5 ${i < review.rating ? 'fill-current' : 'text-gray-300'}`} />
+                  ))}
+                </div>
+                <p className="text-gray-600 italic mb-6">"{review.text}"</p>
+                <div className="flex items-center justify-between mt-auto">
+                  <div className="font-bold text-[var(--color-navy)]">{review.authorName}</div>
+                  <div className="text-sm text-gray-400">{new Date(review.date).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -96,33 +140,6 @@ export const HomePage = () => {
                 />
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Vehicles */}
-      <section className="py-20 bg-gray-50 border-t border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-end mb-12">
-            <div>
-              <h2 className="text-3xl font-bold font-serif text-[var(--color-navy)] mb-2">Véhicules Populaires</h2>
-              <p className="text-gray-600">Découvrez notre sélection des véhicules les plus demandés.</p>
-            </div>
-            <Link to="/catalog" className="hidden md:flex items-center text-[var(--color-gold)] font-semibold hover:text-yellow-600 transition-colors">
-              Voir tout le catalogue <ChevronRight className="w-5 h-5 ml-1" />
-            </Link>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredVehicles.map(car => (
-              <VehicleCard key={car.id} car={car} />
-            ))}
-          </div>
-
-          <div className="mt-10 text-center md:hidden">
-            <Link to="/catalog" className="inline-flex items-center text-[var(--color-gold)] font-semibold hover:text-yellow-600 transition-colors">
-              Voir tout le catalogue <ChevronRight className="w-5 h-5 ml-1" />
-            </Link>
           </div>
         </div>
       </section>

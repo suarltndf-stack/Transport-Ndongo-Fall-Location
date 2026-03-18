@@ -1,14 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Car, User, Shield, Check, AlertCircle } from 'lucide-react';
+import { Car, User, Shield, Check, AlertCircle, Star } from 'lucide-react';
 import { useVehicles } from '../VehicleContext';
 
 export const VehicleDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { vehicles } = useVehicles();
+  const { vehicles, reservations, reviews, addReview } = useVehicles();
   const car = vehicles.find(v => v.id === id);
-  const [selectedImageIdx, setSelectedImageIdx] = React.useState(0);
+  const [selectedImageIdx, setSelectedImageIdx] = useState(0);
+  const [reviewForm, setReviewForm] = useState({ authorName: '', rating: 5, text: '' });
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
   if (!car) return <div className="p-20 text-center">Véhicule introuvable.</div>;
 
@@ -16,9 +18,20 @@ export const VehicleDetailPage = () => {
   const isSoon = car.status === 'soon';
   const isAvailable = car.status === 'available';
 
-  // Find confirmed reservations for this vehicle to show unavailable dates
-  const { reservations } = useVehicles();
   const confirmedReservations = reservations.filter(r => r.vehicleId === car.id && r.status === 'confirmed');
+  
+  const carReviews = reviews.filter(r => r.vehicleId === car.id || !r.vehicleId);
+
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await addReview({
+      ...reviewForm,
+      vehicleId: car.id
+    });
+    setReviewSubmitted(true);
+    setReviewForm({ authorName: '', rating: 5, text: '' });
+    setTimeout(() => setReviewSubmitted(false), 3000);
+  };
 
   const gallery = car.gallery?.length ? car.gallery : (car.image ? [car.image] : []);
   const currentImage = gallery[selectedImageIdx] || car.image;
@@ -109,10 +122,14 @@ export const VehicleDetailPage = () => {
             </div>
 
             <div className="mt-auto bg-blue-50 p-6 rounded-xl border border-blue-100">
-              <div className="flex items-end justify-between mb-6">
+              <div className="flex flex-col gap-4 mb-6">
                 <div>
-                  <div className="text-sm text-gray-500 mb-1">Tarif de location</div>
+                  <div className="text-sm text-gray-500 mb-1">Tarif de location (Dakar)</div>
                   <div className="text-3xl font-bold text-[var(--color-navy)]">{car.price.toLocaleString('fr-FR')} FCFA<span className="text-lg font-normal text-gray-500">/jour</span></div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Tarif de location (Hors Dakar)</div>
+                  <div className="text-2xl font-bold text-[var(--color-navy)]">{(car.priceOutsideDakar || car.price).toLocaleString('fr-FR')} FCFA<span className="text-base font-normal text-gray-500">/jour</span></div>
                 </div>
               </div>
               
@@ -137,6 +154,89 @@ export const VehicleDetailPage = () => {
               <button onClick={() => navigate(`/book/${car.id}`)} className="w-full bg-[var(--color-navy)] text-white py-4 rounded-lg font-bold text-lg hover:bg-blue-900 transition-colors">
                 Réserver ce véhicule
               </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Reviews Section */}
+        <div className="mt-16 border-t border-gray-100 pt-16">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <div>
+              <h3 className="text-2xl font-bold font-serif text-[var(--color-navy)] mb-8">Avis sur ce véhicule</h3>
+              {carReviews.length > 0 ? (
+                <div className="space-y-6">
+                  {carReviews.map(review => (
+                    <div key={review.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                      <div className="flex text-[var(--color-gold)] mb-3">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} className={`w-4 h-4 ${i < review.rating ? 'fill-current' : 'text-gray-300'}`} />
+                        ))}
+                      </div>
+                      <p className="text-gray-600 italic mb-4">"{review.text}"</p>
+                      <div className="flex items-center justify-between">
+                        <div className="font-bold text-[var(--color-navy)]">{review.authorName}</div>
+                        <div className="text-sm text-gray-400">{new Date(review.date).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 italic">Aucun avis pour le moment. Soyez le premier à donner votre avis !</p>
+              )}
+            </div>
+
+            <div>
+              <div className="bg-gray-50 p-8 rounded-2xl border border-gray-100">
+                <h3 className="text-2xl font-bold font-serif text-[var(--color-navy)] mb-6">Laisser un avis</h3>
+                {reviewSubmitted ? (
+                  <div className="bg-green-50 text-green-800 p-4 rounded-lg border border-green-200">
+                    Merci pour votre avis ! Il a été publié avec succès.
+                  </div>
+                ) : (
+                  <form onSubmit={handleReviewSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Votre nom</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={reviewForm.authorName}
+                        onChange={e => setReviewForm({...reviewForm, authorName: e.target.value})}
+                        className="w-full border border-gray-300 rounded-md px-4 py-2 focus:ring-[var(--color-gold)] focus:border-[var(--color-gold)]"
+                        placeholder="Jean Dupont"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Note</label>
+                      <div className="flex gap-2">
+                        {[1, 2, 3, 4, 5].map(star => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setReviewForm({...reviewForm, rating: star})}
+                            className="focus:outline-none"
+                          >
+                            <Star className={`w-8 h-8 ${star <= reviewForm.rating ? 'fill-[var(--color-gold)] text-[var(--color-gold)]' : 'text-gray-300'}`} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Votre commentaire</label>
+                      <textarea 
+                        required 
+                        rows={4}
+                        value={reviewForm.text}
+                        onChange={e => setReviewForm({...reviewForm, text: e.target.value})}
+                        className="w-full border border-gray-300 rounded-md px-4 py-2 focus:ring-[var(--color-gold)] focus:border-[var(--color-gold)]"
+                        placeholder="Partagez votre expérience..."
+                      ></textarea>
+                    </div>
+                    <button type="submit" className="w-full bg-[var(--color-gold)] text-white py-3 rounded-lg font-bold hover:bg-yellow-600 transition-colors">
+                      Publier l'avis
+                    </button>
+                  </form>
+                )}
+              </div>
             </div>
           </div>
         </div>

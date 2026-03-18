@@ -164,7 +164,10 @@ export const VehicleCard = ({ car }: { car: Vehicle }) => {
         </div>
 
         <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100">
-          <div className="text-xl font-bold text-[var(--color-navy)]">{car.price.toLocaleString('fr-FR')} FCFA<span className="text-sm font-normal text-gray-500">/j</span></div>
+          <div className="flex flex-col">
+            <div className="text-sm text-gray-600">Dakar: <span className="text-lg font-bold text-[var(--color-navy)]">{car.price.toLocaleString('fr-FR')} FCFA</span>/j</div>
+            <div className="text-sm text-gray-600">Hors Dakar: <span className="text-lg font-bold text-[var(--color-navy)]">{(car.priceOutsideDakar || car.price).toLocaleString('fr-FR')} FCFA</span>/j</div>
+          </div>
           {isRented ? (
             <button disabled className="bg-gray-300 text-gray-500 px-4 py-2 rounded font-medium cursor-not-allowed">
               Indisponible

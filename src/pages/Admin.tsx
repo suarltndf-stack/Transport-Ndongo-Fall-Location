@@ -80,7 +80,7 @@ export const AdminPage = () => {
   const openAddModal = () => {
     setEditingVehicle(null);
     setFormData({
-      name: '', category: 'Berline Luxe', price: 0, image: '', gallery: [], transmission: 'Automatique',
+      name: '', category: 'Berline Luxe', price: 0, priceOutsideDakar: 0, image: '', gallery: [], transmission: 'Automatique',
       seats: 5, fuel: 'Essence', luggage: 2, description: '', status: 'available'
     });
     setIsModalOpen(true);
@@ -459,7 +459,10 @@ export const AdminPage = () => {
                           <div className="text-xs text-gray-500">{car.category}</div>
                         </div>
                       </td>
-                      <td className="p-4 text-gray-600 text-sm font-medium">{car.price.toLocaleString('fr-FR')} FCFA</td>
+                      <td className="p-4 text-gray-600 text-sm font-medium">
+                        <div>Dakar: {car.price.toLocaleString('fr-FR')} FCFA</div>
+                        <div className="text-xs text-gray-500">Hors Dakar: {(car.priceOutsideDakar || car.price).toLocaleString('fr-FR')} FCFA</div>
+                      </td>
                       <td className="p-4">
                         {car.status === 'available' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Disponible</span>}
                         {car.status === 'soon' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">Bientôt libre ({car.returnDate})</span>}
@@ -668,8 +671,12 @@ export const AdminPage = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Prix par jour (FCFA)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Prix par jour Dakar (FCFA)</label>
                   <input type="number" required value={formData.price || ''} onChange={e => setFormData({...formData, price: Number(e.target.value)})} className="w-full border border-gray-300 rounded-md px-3 py-2" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Prix par jour Hors Dakar (FCFA)</label>
+                  <input type="number" required value={formData.priceOutsideDakar || ''} onChange={e => setFormData({...formData, priceOutsideDakar: Number(e.target.value)})} className="w-full border border-gray-300 rounded-md px-3 py-2" />
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Photos du véhicule (Max 4)</label>

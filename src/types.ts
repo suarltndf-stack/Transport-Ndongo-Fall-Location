@@ -21,6 +21,7 @@ export interface Vehicle {
   name: string;
   category: string;
   price: number;
+  priceOutsideDakar?: number;
   image: string;
   gallery?: string[];
   transmission: string;
@@ -30,6 +31,15 @@ export interface Vehicle {
   description: string;
   status: VehicleStatus;
   returnDate?: string;
+}
+
+export interface Review {
+  id: string;
+  authorName: string;
+  rating: number;
+  text: string;
+  date: string;
+  vehicleId?: string;
 }
 
 export interface Founder {

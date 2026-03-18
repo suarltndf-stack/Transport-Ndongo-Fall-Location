@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { Vehicle, VehicleStatus, Founder, Reservation, ReservationStatus, BookingOption, CompanyInfo } from './types';
+import { Vehicle, VehicleStatus, Founder, Reservation, ReservationStatus, BookingOption, CompanyInfo, Review } from './types';
 import { db, auth } from './firebase';
 import { collection, doc, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc, getDocFromServer, getDocs } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -55,12 +55,12 @@ async function testConnection() {
 testConnection();
 
 const INITIAL_VEHICLES: Vehicle[] = [
-  { id: '1', name: 'Mercedes Classe E', category: 'Berline Luxe', price: 60000, image: 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&q=80', transmission: 'Automatique', seats: 5, fuel: 'Essence', luggage: 2, description: 'Le summum du luxe et du confort pour vos déplacements professionnels ou personnels.', status: 'available' },
-  { id: '2', name: 'Toyota Land Cruiser Prado', category: '4x4 / SUV', price: 65000, image: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80', transmission: 'Automatique', seats: 7, fuel: 'Diesel', luggage: 4, description: 'Robuste et spacieux, idéal pour explorer le Sénégal en toute sécurité.', status: 'rented' },
-  { id: '3', name: 'Renault Logan', category: 'Économique', price: 20000, image: 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&q=80', transmission: 'Manuelle', seats: 5, fuel: 'Essence', luggage: 2, description: 'Pratique et économique pour vos trajets quotidiens en ville.', status: 'soon', returnDate: '25 Avr' },
-  { id: '4', name: 'Peugeot 208', category: 'Citadine', price: 25000, image: 'https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?auto=format&fit=crop&q=80', transmission: 'Automatique', seats: 5, fuel: 'Essence', luggage: 1, description: 'Compacte et maniable, parfaite pour se faufiler dans la circulation dakaroise.', status: 'available' },
-  { id: '5', name: 'Toyota HiAce', category: 'Minibus / Van', price: 70000, image: 'https://images.unsplash.com/photo-1563720360172-67b8f3dce741?auto=format&fit=crop&q=80', transmission: 'Manuelle', seats: 15, fuel: 'Diesel', luggage: 6, description: 'La solution idéale pour les voyages en groupe ou les excursions touristiques.', status: 'rented' },
-  { id: '6', name: 'BMW Série 5', category: 'Berline Luxe', price: 55000, image: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80', transmission: 'Automatique', seats: 5, fuel: 'Essence', luggage: 2, description: 'Élégance et performance réunies dans cette berline haut de gamme.', status: 'soon', returnDate: '28 Avr' },
+  { id: '1', name: 'Mercedes Classe E', category: 'Berline Luxe', price: 60000, priceOutsideDakar: 75000, image: 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&q=80', transmission: 'Automatique', seats: 5, fuel: 'Essence', luggage: 2, description: 'Le summum du luxe et du confort pour vos déplacements professionnels ou personnels.', status: 'available' },
+  { id: '2', name: 'Toyota Land Cruiser Prado', category: '4x4 / SUV', price: 65000, priceOutsideDakar: 80000, image: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80', transmission: 'Automatique', seats: 7, fuel: 'Diesel', luggage: 4, description: 'Robuste et spacieux, idéal pour explorer le Sénégal en toute sécurité.', status: 'rented' },
+  { id: '3', name: 'Renault Logan', category: 'Économique', price: 20000, priceOutsideDakar: 30000, image: 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&q=80', transmission: 'Manuelle', seats: 5, fuel: 'Essence', luggage: 2, description: 'Pratique et économique pour vos trajets quotidiens en ville.', status: 'soon', returnDate: '25 Avr' },
+  { id: '4', name: 'Peugeot 208', category: 'Citadine', price: 25000, priceOutsideDakar: 35000, image: 'https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?auto=format&fit=crop&q=80', transmission: 'Automatique', seats: 5, fuel: 'Essence', luggage: 1, description: 'Compacte et maniable, parfaite pour se faufiler dans la circulation dakaroise.', status: 'available' },
+  { id: '5', name: 'Toyota HiAce', category: 'Minibus / Van', price: 70000, priceOutsideDakar: 85000, image: 'https://images.unsplash.com/photo-1563720360172-67b8f3dce741?auto=format&fit=crop&q=80', transmission: 'Manuelle', seats: 15, fuel: 'Diesel', luggage: 6, description: 'La solution idéale pour les voyages en groupe ou les excursions touristiques.', status: 'rented' },
+  { id: '6', name: 'BMW Série 5', category: 'Berline Luxe', price: 55000, priceOutsideDakar: 70000, image: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80', transmission: 'Automatique', seats: 5, fuel: 'Essence', luggage: 2, description: 'Élégance et performance réunies dans cette berline haut de gamme.', status: 'soon', returnDate: '28 Avr' },
 ];
 
 const INITIAL_FOUNDER: Founder = {
@@ -83,6 +83,12 @@ const INITIAL_COMPANY_INFO: CompanyInfo = {
   whatsapp: "221770000000"
 };
 
+const INITIAL_REVIEWS: Review[] = [
+  { id: 'rev1', authorName: 'Mamadou Diop', rating: 5, text: 'Service impeccable ! Le véhicule était propre et le chauffeur très professionnel. Je recommande vivement.', date: '2023-10-15' },
+  { id: 'rev2', authorName: 'Sophie Ndiaye', rating: 4, text: 'Très bonne expérience de location. La voiture était en parfait état. Seul bémol, un léger retard à la livraison.', date: '2023-11-02' },
+  { id: 'rev3', authorName: 'Ousmane Fall', rating: 5, text: 'Rien à dire, tout était parfait. Le rapport qualité/prix est excellent.', date: '2023-12-20' }
+];
+
 interface VehicleContextType {
   vehicles: Vehicle[];
   founder: Founder;
@@ -102,6 +108,8 @@ interface VehicleContextType {
   updateLogo: (logo: string) => Promise<void>;
   companyInfo: CompanyInfo;
   updateCompanyInfo: (info: CompanyInfo) => Promise<void>;
+  reviews: Review[];
+  addReview: (review: Omit<Review, 'id' | 'date'>) => Promise<void>;
   isAuthReady: boolean;
   isAdmin: boolean;
 }
@@ -113,6 +121,7 @@ export const VehicleProvider: React.FC<{children: React.ReactNode}> = ({ childre
   const [founder, setFounder] = useState<Founder>(INITIAL_FOUNDER);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [bookingOptions, setBookingOptions] = useState<BookingOption[]>(INITIAL_OPTIONS);
+  const [reviews, setReviews] = useState<Review[]>(INITIAL_REVIEWS);
   const [logo, setLogo] = useState<string>('');
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo>(INITIAL_COMPANY_INFO);
   const [isAuthReady, setIsAuthReady] = useState(false);
@@ -157,6 +166,12 @@ export const VehicleProvider: React.FC<{children: React.ReactNode}> = ({ childre
       }
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'bookingOptions'));
 
+    const unsubReviews = onSnapshot(collection(db, 'reviews'), (snapshot) => {
+      if (!snapshot.empty) {
+        setReviews(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review)));
+      }
+    }, (error) => handleFirestoreError(error, OperationType.LIST, 'reviews'));
+
     const unsubSettings = onSnapshot(doc(db, 'settings', 'general'), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
@@ -176,6 +191,7 @@ export const VehicleProvider: React.FC<{children: React.ReactNode}> = ({ childre
     return () => {
       unsubVehicles();
       unsubOptions();
+      unsubReviews();
       unsubSettings();
       unsubReservations();
     };
@@ -196,6 +212,12 @@ export const VehicleProvider: React.FC<{children: React.ReactNode}> = ({ childre
           if (oSnap.empty) {
             for (const o of INITIAL_OPTIONS) {
               await setDoc(doc(db, 'bookingOptions', o.id), o);
+            }
+          }
+          const rSnap = await getDocs(collection(db, 'reviews'));
+          if (rSnap.empty) {
+            for (const r of INITIAL_REVIEWS) {
+              await setDoc(doc(db, 'reviews', r.id), r);
             }
           }
           const sSnap = await getDocFromServer(doc(db, 'settings', 'general'));
@@ -330,6 +352,20 @@ export const VehicleProvider: React.FC<{children: React.ReactNode}> = ({ childre
     }
   };
 
+  const addReview = async (review: Omit<Review, 'id' | 'date'>) => {
+    try {
+      const newDoc = doc(collection(db, 'reviews'));
+      const newReview: Review = {
+        ...review,
+        id: newDoc.id,
+        date: new Date().toISOString().split('T')[0]
+      };
+      await setDoc(newDoc, newReview);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'reviews');
+    }
+  };
+
   return (
     <VehicleContext.Provider value={{ 
       vehicles, 
@@ -338,6 +374,7 @@ export const VehicleProvider: React.FC<{children: React.ReactNode}> = ({ childre
       bookingOptions,
       logo,
       companyInfo,
+      reviews,
       updateStatus, 
       addVehicle, 
       updateVehicleDetails, 
@@ -350,6 +387,7 @@ export const VehicleProvider: React.FC<{children: React.ReactNode}> = ({ childre
       deleteBookingOption,
       updateLogo,
       updateCompanyInfo,
+      addReview,
       isAuthReady,
       isAdmin
     }}>

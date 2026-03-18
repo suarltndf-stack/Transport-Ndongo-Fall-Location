@@ -39,7 +39,8 @@ export const BookingPage = () => {
   });
 
   const days = Math.max(1, duration);
-  const basePrice = days * car.price;
+  const selectedPrice = zone === 'Dakar' ? car.price : (car.priceOutsideDakar || car.price);
+  const basePrice = days * selectedPrice;
   const optionsPrice = bookingOptions.reduce((total, option) => {
     return total + (options[option.id] ? option.price * days : 0);
   }, 0);
